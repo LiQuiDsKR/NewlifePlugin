@@ -1,0 +1,4 @@
+name: Newlife
+version: '${project.version}'
+main: com.newlifeplugin.NewlifePlugin
+api-version: 1.19
