@@ -1,5 +1,6 @@
 package com.newlifeplugin;
 
+import com.destroystokyo.paper.MaterialSetTag;
 import com.destroystokyo.paper.MaterialTags;
 import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
 import org.bukkit.*;
@@ -74,6 +75,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         missions.add (createMission("금 수집가", "난이도 하", "금 블럭 10개를 모으세요.", Material.GOLD_NUGGET, "미달성"));
         missions.add (createMission("금 부자", "난이도 중", "금 블럭 32개를 모으세요.", Material.GOLD_INGOT, "미달성"));
         missions.add (createMission("금 억만장자", "난이도 상", "금 블럭 64개를 모으세요.", Material.GOLD_BLOCK, "미달성"));
+        missions.add (createMission("\'석\'박사", "난이도 상", "\'석\'으로 끝나는 모든 아이템을 수집하세요.", Material.LODESTONE, "미달성"));
+
     }
 
     private Mission createMission(String missionName, String difficulty, String missionDetail, Material displayMaterial, String clearedTeam) {
@@ -111,7 +114,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerInventorySlotChanged(PlayerInventorySlotChangeEvent event) {
-        if (event.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA){
+        if (event.getPlayer().getInventory().getChestplate() != null && event.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA){
             event.getPlayer().getInventory().setChestplate(new ItemStack(Material.AIR));
             event.getPlayer().sendMessage("You can't equip Elytra!");
         }
@@ -133,9 +136,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             teams.put(playerName, "team2");
         } else if (command.equals("/check")) {
             event.setCancelled(true);
-            checkGoldRich1(event.getPlayer());
-            checkGoldRich2(event.getPlayer());
-            checkGoldRich3(event.getPlayer());
         } else if (command.equals("/teaminfo")) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(teams.keySet().toString());
@@ -157,17 +157,21 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             event.setCancelled(true);
             Player player = event.getPlayer();
             ItemStack item = player.getInventory().getItemInMainHand();
-
-            if (item != null && item.getType() != Material.AIR) {
-                if (player.getLevel() >= 1) {
-                    enchantItemRandomly(item);
-                    player.setLevel(player.getLevel() - 1);
-                    player.sendMessage("Your item has been enchanted!");
+            if (item != null ) {
+                if (MaterialTags.ENCHANTABLE.isTagged(item)) {
+                    if (player.getLevel() >= 1) {
+                        enchantItemRandomly(item, event.getPlayer());
+                        player.setLevel(player.getLevel() - 1);
+                        player.sendMessage(ChatColor.GREEN + "마법 부여에 성공했습니다.");
+                    } else {
+                        player.sendMessage(ChatColor.RED + "마법 부여에 필요한 레벨이 모자랍니다.");
+                    }
                 } else {
-                    player.sendMessage("You don't have enough levels to perform an enchantment.");
+                    player.sendMessage(ChatColor.RED + "해당 아이템은 마법을 부여할 수 없습니다.");
                 }
+
             } else {
-                player.sendMessage("You must be holding an item to enchant it.");
+                player.sendMessage(ChatColor.RED + "마법 부여를 하려면 손에 아이템을 들고 명령어를 입력하세요!");
             }
         } else if (command.equals("/mission")) {
             event.setCancelled(true);
@@ -175,6 +179,11 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    private void missionClearCheck(Player player) {
+        checkGoldRich1(player);
+        checkGoldRich2(player);
+        checkGoldRich3(player);
+    }
     private void checkGoldRich1(Player player) {
 
         int requiredAmount = 10;
@@ -255,19 +264,12 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
 
 
-    private void enchantItemRandomly(ItemStack item) {
-
-        if (item.getType() == Material.ENCHANTED_BOOK) {
-            // If item is an enchanted book, add enchantments to the book
-            item.addUnsafeEnchantment(getRandomEnchantment(), random.nextInt(5) + 1);
-        } else {
-            // If item is not an enchanted book, directly enchant the item
-            for (Enchantment i:item.getEnchantments().keySet()) {
-                item.removeEnchantment(i);
-            }
-            for (int i = 0; i < random.nextInt(5) + 1; i++) {
-                setEnchantment(item);
-            }
+    private void enchantItemRandomly(ItemStack item, Player player) {
+        for (Enchantment i:item.getEnchantments().keySet()) {
+            item.removeEnchantment(i);
+        }
+        for (int i = 0; i < random.nextInt(5) + 1; i++) {
+            setEnchantment(item);
         }
     }
 
@@ -275,7 +277,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         try {
             Enchantment temp;
             temp = getRandomEnchantment();
-            item.addEnchantment(temp, random.nextInt(temp.getMaxLevel()));
+            item.addEnchantment(temp, random.nextInt(temp.getMaxLevel() + 1));
         } catch (IllegalArgumentException e) {
             setEnchantment(item);
         }
