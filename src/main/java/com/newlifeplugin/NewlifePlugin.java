@@ -7,8 +7,7 @@ import org.bukkit.*;
 import org.bukkit.entity.Item;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.enchantments.Enchantment;
@@ -19,8 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -41,6 +38,7 @@ import java.util.Random;
 public final class NewlifePlugin extends JavaPlugin implements Listener {
     private HashMap<String, String> teams;
     private Random random;
+    private boolean flag01 = false;
 
     Inventory missionInventory = Bukkit.createInventory(null, 27, "Missions");
 
@@ -75,6 +73,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         missions.add (createMission("금 수집가", "난이도 하", "금 블럭 10개를 모으세요.", Material.GOLD_NUGGET, "미달성"));
         missions.add (createMission("금 부자", "난이도 중", "금 블럭 32개를 모으세요.", Material.GOLD_INGOT, "미달성"));
         missions.add (createMission("금 억만장자", "난이도 상", "금 블럭 64개를 모으세요.", Material.GOLD_BLOCK, "미달성"));
+        missions.add (createMission("풍선처럼 가볍게", "난이도 상", "세상의 가장 아래에서 가장 위로 땅을 밟지 않고 올라가세요.", Material.ELYTRA, "미달성"));
         missions.add (createMission("\'석\'박사", "난이도 상", "\'석\'으로 끝나는 모든 아이템을 수집하세요.", Material.LODESTONE, "미달성"));
 
     }
@@ -184,51 +183,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         checkGoldRich2(player);
         checkGoldRich3(player);
     }
-    private void checkGoldRich1(Player player) {
-
-        int requiredAmount = 10;
-        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
-                for (Mission m :missions) {
-                    if (m.missinName == "금 수집가" && m.clearedTeam == "미달성") {
-                        m.clearedTeam = teams.get(player.getName());
-                    }
-                }
-            }
-        }
-    }
-    private void checkGoldRich2(Player player) {
-
-        int requiredAmount = 32;
-        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
-                for (Mission m :missions) {
-                    if (m.missinName == "금 부자" && m.clearedTeam == "미달성") {
-                        m.clearedTeam = teams.get(player.getName());
-                    }
-                }
-            }
-        }
-    }
-    private void checkGoldRich3(Player player) {
-
-        int requiredAmount = 64;
-        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
-                for (Mission m :missions) {
-                    if (m.missinName == "금 억만장자" && m.clearedTeam == "미달성") {
-                        m.clearedTeam = teams.get(player.getName());
-                    }
-                }
-            }
-        }
-    }
     private void openMissionUI(Player player) {
         updateMission();
         player.openInventory(missionInventory);
@@ -247,6 +201,11 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         if (event.getView().getTitle().equalsIgnoreCase("Missions")) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        checkBottomToTop(event.getPlayer());
     }
 
     public void onEntityDeath(EntityDeathEvent event) {
@@ -300,6 +259,132 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 player.sendMessage("You have been teleported back to the Overworld.");
             }
         }
+    }
+    private void checkGoldRich1(Player player) {
+
+        int requiredAmount = 10;
+        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
+                for (Mission m :missions) {
+                    if (m.missinName == "금 수집가" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
+                }
+            }
+        }
+    }
+    private void checkGoldRich2(Player player) {
+
+        int requiredAmount = 32;
+        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
+                for (Mission m :missions) {
+                    if (m.missinName == "금 부자" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
+                }
+            }
+        }
+    }
+    private void checkGoldRich3(Player player) {
+
+        int requiredAmount = 64;
+        ItemStack targetItem = new ItemStack(Material.GOLD_BLOCK, requiredAmount);
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
+                for (Mission m :missions) {
+                    if (m.missinName == "금 억만장자" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    private void checkBottomToTop(Player player) {
+        Location playerLocation = player.getLocation();
+        int playerY = playerLocation.getBlockY();
+
+        // Check if the player has reached the lowest position
+        if (playerY == -63) {
+            flag01 = true;
+            player.sendMessage("Detecting mission progress...");
+        }
+
+        if (flag01 == true) {
+            // Check if the player stepped on a block
+            if (playerLocation.getBlock().getType() != Material.AIR) {
+                flag01 = false;
+                player.sendMessage("Mission failed!");
+            }
+            // Check if the player has reached the highest position without stepping on a block
+            if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
+                flag01 = false;
+                player.sendMessage("Mission complete!");
+            }
+
+        }
+
+    }
+    public void checkSEOKDoctor(Player player) {
+        PlayerInventory inventory = player.getInventory();
+
+        // List of required materials
+        Material[] requiredMaterials = {
+                Material.GLOWSTONE,
+                Material.LAPIS_LAZULI,
+                Material.GOLD_ORE,
+                Material.COPPER_ORE,
+                Material.IRON_ORE,
+                Material.AMETHYST_CLUSTER,
+                Material.NETHER_QUARTZ_ORE,
+                Material.ANCIENT_DEBRIS,
+                Material.DEEPSLATE_DIAMOND_ORE,
+                Material.DIAMOND_ORE,
+                Material.DEEPSLATE_LAPIS_ORE,
+                Material.LAPIS_ORE,
+                Material.DEEPSLATE_EMERALD_ORE,
+                Material.DEEPSLATE_REDSTONE_ORE,
+                Material.DEEPSLATE_GOLD_ORE,
+                Material.DEEPSLATE_COPPER_ORE,
+                Material.DEEPSLATE_IRON_ORE,
+                Material.DEEPSLATE_COAL_ORE,
+                Material.COAL_ORE,
+                Material.CRYING_OBSIDIAN,
+                Material.OBSIDIAN,
+                Material.POINTED_DRIPSTONE,
+                Material.CAVE_VINES
+        };
+
+        boolean flag02 = true;
+
+        for (Material material : requiredMaterials) {
+            if (!hasMaterial(inventory, material)) {
+                flag02 = false;
+                break;
+            }
+        }
+        if (flag02) {
+            for (Mission m :missions) {
+                if (m.missinName == "\'석\'박사" && m.clearedTeam == "미달성") {
+                    m.clearedTeam = teams.get(player.getName());
+                }
+            }
+        }
+
+    }
+    private static boolean hasMaterial(PlayerInventory inventory, Material material) {
+        for (ItemStack item : inventory.getContents()) {
+            if (item != null && item.getType() == material) {
+                return true; // Player has the material
+            }
+        }
+        return false; // Player doesn't have the material
     }
 }
 
