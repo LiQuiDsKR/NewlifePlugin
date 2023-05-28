@@ -1,0 +1,3 @@
+cd C:\Users\W10861\Documents\GitHub\NewlifePlugin\builds\server
+java -Xms2G -Xmx3G -jar paper-1.19.4.jar
+Get-Process -Name java | Stop-Process -Force

@@ -37,7 +37,7 @@ import java.util.Random;
 
 public final class NewlifePlugin extends JavaPlugin implements Listener {
     private HashMap<String, String> teams;
-    private Random random;
+        private Random random;
     private boolean flag01 = false;
 
     Inventory missionInventory = Bukkit.createInventory(null, 27, "Missions");
@@ -182,12 +182,15 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         checkGoldRich1(player);
         checkGoldRich2(player);
         checkGoldRich3(player);
+        checkBottomToTop(player);
+        checkSEOKDoctor(player);
     }
     private void openMissionUI(Player player) {
-        updateMission();
+        updateMission(player);
         player.openInventory(missionInventory);
     }
-    private void updateMission() {
+    private void updateMission(Player player) {
+        missionClearCheck(player);
 
         Inventory inventory = missionInventory;
         inventory.clear();
@@ -313,19 +316,21 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         // Check if the player has reached the lowest position
         if (playerY == -63) {
             flag01 = true;
-            player.sendMessage("Detecting mission progress...");
         }
 
         if (flag01 == true) {
             // Check if the player stepped on a block
             if (playerLocation.getBlock().getType() != Material.AIR) {
                 flag01 = false;
-                player.sendMessage("Mission failed!");
             }
             // Check if the player has reached the highest position without stepping on a block
             if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
                 flag01 = false;
-                player.sendMessage("Mission complete!");
+                for (Mission m :missions) {
+                    if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
+                }
             }
 
         }

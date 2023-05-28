@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
   <artifact type="jar" build-on-make="true" name="NewlifePlugin:jar">
-    <output-path>D:/Minecraft/Server/1.19.4 NewlifePlugin/plugins</output-path>
+    <output-path>$PROJECT_DIR$/builds/server/plugins</output-path>
     <root id="archive" name="NewlifePlugin.jar">
       <element id="module-output" name="NewlifePlugin" />
     </root>
