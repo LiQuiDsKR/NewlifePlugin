@@ -1,10 +1,9 @@
 package com.newlifeplugin;
 
-import com.destroystokyo.paper.MaterialSetTag;
 import com.destroystokyo.paper.MaterialTags;
 import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
 import org.bukkit.*;
-import org.bukkit.entity.Item;
+import org.bukkit.entity.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
@@ -12,8 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentTarget;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -32,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Random;
 
 public final class NewlifePlugin extends JavaPlugin implements Listener {
@@ -41,7 +40,9 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     private boolean flag01 = false;
 
     Inventory missionInventory = Bukkit.createInventory(null, 27, "Missions");
-
+    private Map<UUID, UUID> playerDeaths = new HashMap<>();
+    public Entity killer;
+    public Player killedPlayer;
     public class Mission {
         String missinName;
         String difficulty;
@@ -56,7 +57,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         Bukkit.getPluginManager().registerEvents(this, this);
-
         teams = new HashMap<>();
         random = new Random();
 
@@ -74,7 +74,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         missions.add (createMission("금 부자", "난이도 중", "금 블럭 32개를 모으세요.", Material.GOLD_INGOT, "미달성"));
         missions.add (createMission("금 억만장자", "난이도 상", "금 블럭 64개를 모으세요.", Material.GOLD_BLOCK, "미달성"));
         missions.add (createMission("풍선처럼 가볍게", "난이도 상", "세상의 가장 아래에서 가장 위로 땅을 밟지 않고 올라가세요.", Material.ELYTRA, "미달성"));
-        missions.add (createMission("\'석\'박사", "난이도 상", "\'석\'으로 끝나는 모든 아이템을 수집하세요.", Material.LODESTONE, "미달성"));
+        missions.add (createMission("전생의 원수", "난이도 중", "가장 최근에 자신을 죽인 대상을 죽이세요.", Material.WOODEN_SWORD, "미달성"));
+        missions.add (createMission("\'석\'박사", "난이도 중", "\'석\'으로 끝나는 모든 아이템을 수집하세요.", Material.LODESTONE, "미달성"));
 
     }
 
@@ -178,6 +179,16 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        Entity killer = victim.getKiller();
+
+        if (killer instanceof LivingEntity) {
+            playerDeaths.put(victim.getUniqueId(), killer.getUniqueId());
+        }
+    }
+
     private void missionClearCheck(Player player) {
         checkGoldRich1(player);
         checkGoldRich2(player);
@@ -211,6 +222,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         checkBottomToTop(event.getPlayer());
     }
 
+    @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof EnderDragon) {
             Bukkit.broadcastMessage("The Ender Dragon has been defeated!");
@@ -221,6 +233,26 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                     teleportFromEnd();
                 }
             }.runTaskLater(this, 5 * 60 * 20); // 5 minutes * 60 seconds * 20 ticks
+        }
+        Entity entity = event.getEntity();
+
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            killedPlayer = (Player) entity;
+
+            UUID playerVictimUUID = player.getUniqueId();
+            UUID killerUUID = playerDeaths.get(playerVictimUUID);
+
+            if (killerUUID != null) {
+                killer = Bukkit.getEntity(killerUUID);
+            }
+        }
+        if (event.getEntity().getKiller() == killedPlayer) {
+            for (Mission m :missions) {
+                if (m.missinName == "전생의 원수" && m.clearedTeam == "미달성") {
+                    m.clearedTeam = teams.get(killedPlayer.getName());
+                }
+            }
         }
     }
 
@@ -316,6 +348,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         // Check if the player has reached the lowest position
         if (playerY == -63) {
             flag01 = true;
+            player.sendMessage("you are y-63");
         }
 
         if (flag01 == true) {
@@ -326,6 +359,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             // Check if the player has reached the highest position without stepping on a block
             if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
                 flag01 = false;
+                player.sendMessage("you are y319");
                 for (Mission m :missions) {
                     if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
                         m.clearedTeam = teams.get(player.getName());
@@ -346,9 +380,9 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 Material.GOLD_ORE,
                 Material.COPPER_ORE,
                 Material.IRON_ORE,
-                Material.AMETHYST_CLUSTER,
+                Material.LODESTONE,
                 Material.NETHER_QUARTZ_ORE,
-                Material.ANCIENT_DEBRIS,
+                Material.NETHER_GOLD_ORE,
                 Material.DEEPSLATE_DIAMOND_ORE,
                 Material.DIAMOND_ORE,
                 Material.DEEPSLATE_LAPIS_ORE,
@@ -363,7 +397,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 Material.CRYING_OBSIDIAN,
                 Material.OBSIDIAN,
                 Material.POINTED_DRIPSTONE,
-                Material.CAVE_VINES
+                Material.CALCITE
         };
 
         boolean flag02 = true;
