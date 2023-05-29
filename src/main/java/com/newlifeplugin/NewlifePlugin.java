@@ -22,8 +22,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.Location;
+import org.bukkit.block.Biome;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import org.bukkit.block.Block;
+import org.bukkit.event.block.BlockPlaceEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +79,17 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         missions.add (createMission("금 억만장자", "난이도 상", "금 블럭 64개를 모으세요.", Material.GOLD_BLOCK, "미달성"));
         missions.add (createMission("풍선처럼 가볍게", "난이도 상", "세상의 가장 아래에서 가장 위로 땅을 밟지 않고 올라가세요.", Material.ELYTRA, "미달성"));
         missions.add (createMission("전생의 원수", "난이도 중", "가장 최근에 자신을 죽인 대상을 죽이세요.", Material.WOODEN_SWORD, "미달성"));
+        missions.add (createMission("건물 사이에 피어난 장미", "난이도 하", "마을에 장미를 심으세요.", Material.POPPY, "미달성"));
+        missions.add (createMission("아무도 없어요?", "난이도 하", "버려진 마을을 발견하세요.", Material.COBWEB, "미달성"));
         missions.add (createMission("\'석\'박사", "난이도 중", "\'석\'으로 끝나는 모든 아이템을 수집하세요.", Material.LODESTONE, "미달성"));
+        missions.add (createMission("제발 잠 좀 자자", "난이도 하", "잠을 방해하는 녀석을 제거하세요.", Material.WHITE_BED, "미달성"));
+        missions.add (createMission("물개", "난이도 상", "늑대와 함께 바다 신전을 공략하세요.", Material.PRISMARINE_SHARD, "미달성"));
+        missions.add (createMission("옆 신사분께서 쏘셨습니다", "난이도 중", "화염구를 다른 대상에게 선물하세요.", Material.GHAST_TEAR, "미달성"));
+        missions.add (createMission("폭적폭", "난이도 중", "크리퍼에게 자폭 외의 폭발을 알려주세요.", Material.GUNPOWDER, "미달성"));
+        missions.add (createMission("갓챠!", "난이도 상", "푸른 아홀로틀을 발견하세요.", Material.AXOLOTL_BUCKET, "미달성"));
+        missions.add (createMission("쓸모없는 토템", "난이도 중", "불사의 토템을 무용지물로 만드세요.", Material.TOTEM_OF_UNDYING, "미달성"));
+        missions.add (createMission("충전 완료", "난이도 중", "충전된 크리퍼를 발견하세요.", Material.CREEPER_HEAD, "미달성"));
+        missions.add (createMission("어린 왕자", "난이도 상", "여우와 함께 죽음을 피하세요.", Material.SWEET_BERRIES, "미달성"));
 
     }
 
@@ -118,6 +132,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             event.getPlayer().getInventory().setChestplate(new ItemStack(Material.AIR));
             event.getPlayer().sendMessage("You can't equip Elytra!");
         }
+        InventoryMissionCheck(event.getPlayer());
     }
 
     @EventHandler
@@ -180,6 +195,49 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Location location = player.getLocation();
+
+        // Check if the player is in a zombie village biome
+        if (location.getBlock().getBiome() == Biome.PLAINS && location.getBlock().getBiome().name().toLowerCase().contains("zombie")) {
+            // Player has arrived at a zombie village
+            player.sendMessage("Mission cleared!");
+            for (Mission m :missions) {
+                if (m.missinName == "아무도 없어요?" && m.clearedTeam == "미달성") {
+                    m.clearedTeam = teams.get(killedPlayer.getName());
+                }
+            }
+        }
+
+        Location playerLocation = player.getLocation();
+        int playerY = playerLocation.getBlockY();
+
+        // Check if the player has reached the lowest position
+        if (playerY == -63) {
+            flag01 = true;
+            player.sendMessage("you are y-63");
+        }
+
+        if (flag01 == true) {
+            // Check if the player stepped on a block
+            if (playerLocation.getBlock().getType() != Material.AIR) {
+                flag01 = false;
+            }
+            // Check if the player has reached the highest position without stepping on a block
+            if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
+                flag01 = false;
+                player.sendMessage("you are y319");
+                for (Mission m :missions) {
+                    if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
         Entity killer = victim.getKiller();
@@ -189,11 +247,10 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         }
     }
 
-    private void missionClearCheck(Player player) {
+    private void InventoryMissionCheck(Player player) {
         checkGoldRich1(player);
         checkGoldRich2(player);
         checkGoldRich3(player);
-        checkBottomToTop(player);
         checkSEOKDoctor(player);
     }
     private void openMissionUI(Player player) {
@@ -201,8 +258,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         player.openInventory(missionInventory);
     }
     private void updateMission(Player player) {
-        missionClearCheck(player);
-
         Inventory inventory = missionInventory;
         inventory.clear();
         for (Mission m : missions) {
@@ -215,11 +270,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         if (event.getView().getTitle().equalsIgnoreCase("Missions")) {
             event.setCancelled(true);
         }
-    }
-
-    @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
-        checkBottomToTop(event.getPlayer());
     }
 
     @EventHandler
@@ -254,7 +304,22 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 }
             }
         }
+    }@EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+
+        // Check if the placed block is a poppy and if it's in a village
+        if (block.getType() == Material.POPPY && block.getLocation().getWorld().getName().endsWith("_village")) {
+            // Player has cleared the mission
+            for (Mission m :missions) {
+                if (m.missinName == "건물 사이에 피어난 장미" && m.clearedTeam == "미달성") {
+                    m.clearedTeam = teams.get(killedPlayer.getName());
+                }
+            }
+        }
     }
+
 
 
 
@@ -342,32 +407,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     }
 
     private void checkBottomToTop(Player player) {
-        Location playerLocation = player.getLocation();
-        int playerY = playerLocation.getBlockY();
-
-        // Check if the player has reached the lowest position
-        if (playerY == -63) {
-            flag01 = true;
-            player.sendMessage("you are y-63");
-        }
-
-        if (flag01 == true) {
-            // Check if the player stepped on a block
-            if (playerLocation.getBlock().getType() != Material.AIR) {
-                flag01 = false;
-            }
-            // Check if the player has reached the highest position without stepping on a block
-            if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
-                flag01 = false;
-                player.sendMessage("you are y319");
-                for (Mission m :missions) {
-                    if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
-                        m.clearedTeam = teams.get(player.getName());
-                    }
-                }
-            }
-
-        }
 
     }
     public void checkSEOKDoctor(Player player) {
