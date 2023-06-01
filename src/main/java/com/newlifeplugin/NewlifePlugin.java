@@ -279,6 +279,22 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (isNegative63Y.get(player) == null) {
+            isNegative63Y.put(player, false);
+        }
+        if (isNotSafeToSleep.get(player) == null) {
+            isNotSafeToSleep.put(player, false);
+        }
+        if (isReadyToSleep.get(player) == null) {
+            isReadyToSleep.put(player, false);
+        }
+
+
+    }
+
+    @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getView().getTitle().equalsIgnoreCase("Missions")) {
             event.setCancelled(true);
@@ -363,7 +379,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         if (isReadyToSleep.get(event.getPlayer())) {
             if (event.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
                 for (Mission m : missions) {
-                    if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
+                    if (m.missinName == "제발 잠 좀 자자" && m.clearedTeam == "미달성") {
                         m.clearedTeam = teams.get(player.getName());
                     }
                 }
