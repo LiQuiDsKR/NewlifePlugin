@@ -366,6 +366,7 @@
     "criteria": {
       "minecraft:elder_guardian": "2023-06-01 23:33:43 +0900",
       "minecraft:ghast": "2023-06-03 11:49:58 +0900",
+      "minecraft:creeper": "2023-06-03 12:43:00 +0900",
       "minecraft:husk": "2023-05-28 23:08:38 +0900"
     },
     "done": false
@@ -559,6 +560,12 @@
   "minecraft:nether/return_to_sender": {
     "criteria": {
       "killed_ghast": "2023-06-03 11:53:33 +0900"
+    },
+    "done": true
+  },
+  "minecraft:adventure/throw_trident": {
+    "criteria": {
+      "shot_trident": "2023-06-03 12:43:32 +0900"
     },
     "done": true
   },

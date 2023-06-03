@@ -391,7 +391,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
             // 대미지를 받은 후의 체력을 확인하여 체력이 0 이하인 경우에만 처리
             if (((LivingEntity) entity).getHealth() - event.getFinalDamage() <= 0) {
-                // 피해를 받고 죽은 경우에 대한 처리
+
+                // 여기서부터는 "물개" 미션 클리어 판정입니다.
                 if (entity instanceof ElderGuardian && damager instanceof Wolf) {
                     Wolf wolf = (Wolf) damager;
                     for (Player player : getServer().getOnlinePlayers()) {
@@ -409,7 +410,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                         }
                     }
                 }
-
+                // 여기서부터는 "전생의 원수" 미션 클리어 판정입니다.
                 if (damager instanceof Player) {
                     if (playerDeaths.containsKey(damager)) {
                         if (playerDeaths.get(damager) == entity) {
@@ -421,8 +422,28 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                         }
                     }
                 }
+
                 if (entity instanceof Player) {
                     playerDeaths.put((Player) entity, damager);
+                }
+                // 여기서부터는 "폭적폭" 미션 클리어 판정입니다.
+                if (entity instanceof Creeper) {
+                    getServer().getConsoleSender().sendMessage("크리퍼가 죽었습니다.");
+                    Creeper creeper = (Creeper) entity;
+                    for (Player player : Bukkit.getServer().getOnlinePlayers()) {
+                        if (creeper.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
+                            getServer().getConsoleSender().sendMessage("크리퍼가 폭발 데미지로 죽었습니다.");
+                            if (player.getLocation().distance(creeper.getLocation()) <= 16) {
+                                player.sendMessage("당신은 폭발로 죽은 크리퍼 옆에 있었습니다.");
+                                // Mission cleared
+                                for (Mission m : missions) {
+                                    if (m.missinName == "폭적폭" && m.clearedTeam == "미달성") {
+                                        m.clearedTeam = teams.get(player.getName());
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
