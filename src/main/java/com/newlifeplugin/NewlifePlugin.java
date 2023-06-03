@@ -147,7 +147,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     public void onPlayerInventorySlotChanged(PlayerInventorySlotChangeEvent event) {
         if (event.getPlayer().getInventory().getChestplate() != null && event.getPlayer().getInventory().getChestplate().getType() == Material.ELYTRA) {
             event.getPlayer().getInventory().setChestplate(new ItemStack(Material.AIR));
-            event.getPlayer().sendMessage("You can't equip Elytra!");
+            event.getPlayer().sendMessage("겉날개를 착용할 수 없습니다.");
         }
         InventoryMissionCheck(event.getPlayer());
     }
@@ -328,22 +328,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         } else {
             isReadyToSleep.put(event.getEntity().getKiller(), true);
         }
-
-        if (event.getEntity().getKiller() instanceof Fireball) {
-
-            Fireball fireball = (Fireball) event.getEntity().getKiller();
-            ProjectileSource shooter = fireball.getShooter();
-
-            if (shooter instanceof Player) {
-                Player player = (Player) shooter;
-
-                for (Mission m : missions) {
-                    if (m.missinName == "옆 신사분께서 쏘셨습니다" && m.clearedTeam == "미달성") {
-                        m.clearedTeam = teams.get(player.getName());
-                    }
-                }
-            }
-        }
     }
 
     @EventHandler
@@ -391,6 +375,20 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
         // 피해를 받은 엔티티가 LivingEntity인 경우에 대한 처리
         if (entity instanceof LivingEntity) {
+            if (damager instanceof  Fireball && entity instanceof LivingEntity) {
+
+                Fireball fireball = (Fireball) damager;
+
+                if (fireball.getShooter() instanceof Player) {
+                    Player player = (Player) fireball.getShooter();
+                    for (Mission m : missions) {
+                        if (m.missinName == "옆 신사분께서 쏘셨습니다" && m.clearedTeam == "미달성") {
+                            m.clearedTeam = teams.get(player.getName());
+                        }
+                    }
+                }
+            }
+
             // 대미지를 받은 후의 체력을 확인하여 체력이 0 이하인 경우에만 처리
             if (((LivingEntity) entity).getHealth() - event.getFinalDamage() <= 0) {
                 // 피해를 받고 죽은 경우에 대한 처리
@@ -413,11 +411,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 }
 
                 if (damager instanceof Player) {
-                    damager.sendMessage("가해자는 플레이어입니다.");
                     if (playerDeaths.containsKey(damager)) {
-                        damager.sendMessage("playerdeaths에 있는 플레이어가 죽였습니다.");
                         if (playerDeaths.get(damager) == entity) {
-                            damager.sendMessage("정확히 그놈 맞다");
                             for (Mission m : missions) {
                                 if (m.missinName == "전생의 원수" && m.clearedTeam == "미달성") {
                                     m.clearedTeam = teams.get(damager.getName());
