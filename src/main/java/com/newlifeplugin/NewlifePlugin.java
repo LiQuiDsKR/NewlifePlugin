@@ -45,7 +45,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
 
     Inventory missionInventory = Bukkit.createInventory(null, 27, "Missions");
-    private Map<UUID, UUID> playerDeaths = new HashMap<>();
+    private Map<Player, Entity> playerDeaths = new HashMap<>();
 
     private HashMap<Player, Boolean> isNotSafeToSleep;
     private HashMap<Player, Boolean> isReadyToSleep;
@@ -69,6 +69,10 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this, this);
         teams = new HashMap<>();
         random = new Random();
+
+        isNegative63Y = new HashMap<>();
+        isNotSafeToSleep = new HashMap<>();
+        isReadyToSleep = new HashMap<>();
 
         // Declare Variables
         for (Player player : Bukkit.getServer().getOnlinePlayers()) {
@@ -168,6 +172,11 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             event.getPlayer().sendMessage(teams.keySet().toString());
             event.getPlayer().sendMessage(teams.values().toString());
 
+        } else if (command.equals("/info")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(playerDeaths.keySet().toString());
+            event.getPlayer().sendMessage(playerDeaths.values().toString());
+
         } else if (command.startsWith("/team rename")) {
             event.setCancelled(true);
             Player player = event.getPlayer();
@@ -250,12 +259,9 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player victim = event.getEntity();
-        Entity killer = victim.getKiller();
+        Player victim = event.getPlayer();
+        Entity killer = event.getEntity();
 
-        if (killer instanceof LivingEntity) {
-            playerDeaths.put(victim.getUniqueId(), killer.getUniqueId());
-        }
     }
 
     private void InventoryMissionCheck(Player player) {
@@ -281,13 +287,13 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (isNegative63Y.get(player) == null) {
+        if (!isNegative63Y.containsKey(player)) {
             isNegative63Y.put(player, false);
         }
-        if (isNotSafeToSleep.get(player) == null) {
+        if (!isNotSafeToSleep.containsKey(player)) {
             isNotSafeToSleep.put(player, false);
         }
-        if (isReadyToSleep.get(player) == null) {
+        if (!isReadyToSleep.containsKey(player)) {
             isReadyToSleep.put(player, false);
         }
 
@@ -316,22 +322,11 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 }
             }.runTaskLater(this, 5 * 60 * 20); // 5 minutes * 60 seconds * 20 ticks
         }
-        for (UUID temp : playerDeaths.keySet()) {
-            if (event.getEntity().getKiller().getUniqueId() == temp && playerDeaths.get(temp) == event.getEntity().getKiller().getUniqueId()) {
-                for (Player player : getServer().getOnlinePlayers()) {
-                    if (player.getUniqueId() == temp) {
-                        for (Mission m : missions) {
-                            if (m.missinName == "전생의 원수" && m.clearedTeam == "미달성") {
-                                m.clearedTeam = teams.get(player.getName());
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
-        if (isNotSafeToSleep.get(event.getEntity().getKiller())) {
+        if (isNotSafeToSleep.containsKey(event.getEntity().getKiller())) {
             isReadyToSleep.replace(event.getEntity().getKiller(), true);
+        } else {
+            isReadyToSleep.put(event.getEntity().getKiller(), true);
         }
 
         if (event.getEntity().getKiller() instanceof Fireball) {
@@ -376,7 +371,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             isNotSafeToSleep.replace(event.getPlayer(), true);
             player.sendMessage("You cannot sleep; there are monsters nearby!");
         }
-        if (isReadyToSleep.get(event.getPlayer())) {
+        if (isReadyToSleep.containsKey(event.getPlayer()) && isReadyToSleep.get(event.getPlayer())) {
             if (event.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
                 for (Mission m : missions) {
                     if (m.missinName == "제발 잠 좀 자자" && m.clearedTeam == "미달성") {
@@ -394,23 +389,45 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         Entity entity = event.getEntity();
         Entity damager = event.getDamager();
 
-        if (entity instanceof ElderGuardian && damager instanceof Wolf) {
-            Wolf wolf = (Wolf) damager;
-            for (Player player : getServer().getOnlinePlayers()) {
-                if (player.getUniqueId() == wolf.getUniqueId()) {
-                    wolfOwner = player;
-                }
-            }
-
-            if (wolfOwner != null && wolfOwner.isOnline()) {
-                // Check if the wolf's owner tamed the wolf
-                if (wolfOwner.getUniqueId().equals(wolf.getOwnerUniqueId())) {
-                    // Mission cleared
-                    for (Mission m : missions) {
-                        if (m.missinName == "물개" && m.clearedTeam == "미달성") {
-                            m.clearedTeam = teams.get(wolfOwner.getName());
+        // 피해를 받은 엔티티가 LivingEntity인 경우에 대한 처리
+        if (entity instanceof LivingEntity) {
+            // 대미지를 받은 후의 체력을 확인하여 체력이 0 이하인 경우에만 처리
+            if (((LivingEntity) entity).getHealth() - event.getFinalDamage() <= 0) {
+                // 피해를 받고 죽은 경우에 대한 처리
+                if (entity instanceof ElderGuardian && damager instanceof Wolf) {
+                    Wolf wolf = (Wolf) damager;
+                    for (Player player : getServer().getOnlinePlayers()) {
+                        if (player == wolf.getOwner()) {
+                            wolfOwner = player;
                         }
                     }
+
+                    if (wolfOwner != null) {
+                        // Mission cleared
+                        for (Mission m : missions) {
+                            if (m.missinName == "물개" && m.clearedTeam == "미달성") {
+                                m.clearedTeam = teams.get(wolfOwner.getName());
+                            }
+                        }
+                    }
+                }
+
+                if (damager instanceof Player) {
+                    damager.sendMessage("가해자는 플레이어입니다.");
+                    if (playerDeaths.containsKey(damager)) {
+                        damager.sendMessage("playerdeaths에 있는 플레이어가 죽였습니다.");
+                        if (playerDeaths.get(damager) == entity) {
+                            damager.sendMessage("정확히 그놈 맞다");
+                            for (Mission m : missions) {
+                                if (m.missinName == "전생의 원수" && m.clearedTeam == "미달성") {
+                                    m.clearedTeam = teams.get(damager.getName());
+                                }
+                            }
+                        }
+                    }
+                }
+                if (entity instanceof Player) {
+                    playerDeaths.put((Player) entity, damager);
                 }
             }
         }
