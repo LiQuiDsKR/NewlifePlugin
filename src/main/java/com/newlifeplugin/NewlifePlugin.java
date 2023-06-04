@@ -236,7 +236,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         // Check if the player has reached the lowest position
         if (playerY == -63) {
             isNegative63Y.replace(player, true);
-            player.sendMessage("you are y-63");
         }
 
         if (isNegative63Y.get(player)) {
@@ -247,7 +246,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             // Check if the player has reached the highest position without stepping on a block
             if (playerY == 319 && playerLocation.getBlock().getType() == Material.AIR) {
                 isNegative63Y.replace(player, false);
-                player.sendMessage("you are y319");
                 for (Mission m : missions) {
                     if (m.missinName == "풍선처럼 가볍게" && m.clearedTeam == "미달성") {
                         m.clearedTeam = teams.get(player.getName());
@@ -428,13 +426,10 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 }
                 // 여기서부터는 "폭적폭" 미션 클리어 판정입니다.
                 if (entity instanceof Creeper) {
-                    getServer().getConsoleSender().sendMessage("크리퍼가 죽었습니다.");
                     Creeper creeper = (Creeper) entity;
                     for (Player player : Bukkit.getServer().getOnlinePlayers()) {
-                        if (creeper.getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
-                            getServer().getConsoleSender().sendMessage("크리퍼가 폭발 데미지로 죽었습니다.");
-                            if (player.getLocation().distance(creeper.getLocation()) <= 16) {
-                                player.sendMessage("당신은 폭발로 죽은 크리퍼 옆에 있었습니다.");
+                        if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION) {
+                            if (player.getLocation().distance(event.getEntity().getLocation()) <= 16) {
                                 // Mission cleared
                                 for (Mission m : missions) {
                                     if (m.missinName == "폭적폭" && m.clearedTeam == "미달성") {
@@ -443,8 +438,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                                 }
                             }
                         }
-                    }
-                }
+                    }               }
             }
         }
     }
@@ -459,7 +453,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             if (clickedEntity instanceof Monster) {
                 // Player has killed a monster
                 isNotSafeToSleep.replace(event.getPlayer(), false);
-                player.sendMessage("Monster killed! You can now try to sleep again.");
             }
             clickedEntity.remove();
         }
@@ -499,7 +492,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             for (Player player : playersInEnd) {
                 player.setVelocity(new Vector(0, 0, 0));
                 player.teleport(player.getBedSpawnLocation());
-                player.sendMessage("You have been teleported back to the Overworld.");
+                player.sendMessage("오버월드로 이동되었습니다.");
             }
         }
     }
