@@ -5,13 +5,14 @@ import com.destroystokyo.paper.MaterialTags;
 import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
 import org.bukkit.*;
 import org.bukkit.entity.*;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Axolotl;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.meta.AxolotlBucketMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.enchantments.Enchantment;
@@ -267,6 +268,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         checkGoldRich2(player);
         checkGoldRich3(player);
         checkSEOKDoctor(player);
+        CheckGatcha(player);
     }
 
     private void openMissionUI(Player player) {
@@ -438,7 +440,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                                 }
                             }
                         }
-                    }               }
+                    }
+                }
             }
         }
     }
@@ -579,23 +582,48 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                 Material.CALCITE
         };
 
-        boolean flag02 = true;
+        boolean isCollectAllSEOK = true;
 
         for (Material material : requiredMaterials) {
             if (!hasMaterial(inventory, material)) {
-                flag02 = false;
+                isCollectAllSEOK = false;
                 break;
             }
         }
-        if (flag02) {
+        if (isCollectAllSEOK) {
             for (Mission m : missions) {
                 if (m.missinName == "\'석\'박사" && m.clearedTeam == "미달성") {
                     m.clearedTeam = teams.get(player.getName());
                 }
             }
         }
-
     }
+
+    void CheckGatcha(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        int requiredAmount = 1;
+        ItemStack targetItem = new ItemStack(Material.AXOLOTL_BUCKET, requiredAmount);
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
+                ItemMeta itemMeta = item.getItemMeta();
+                if (itemMeta instanceof AxolotlBucketMeta) {
+                    AxolotlBucketMeta bucketMeta = (AxolotlBucketMeta) itemMeta;
+                    if (bucketMeta.getVariant() == Axolotl.Variant.BLUE) {
+                        // Mission cleared
+                        for (Mission m : missions) {
+                            if (m.missinName == "금 억만장자" && m.clearedTeam == "미달성") {
+                                m.clearedTeam = teams.get(player.getName());
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+
 
     private static boolean hasMaterial(PlayerInventory inventory, Material material) {
         for (ItemStack item : inventory.getContents()) {
