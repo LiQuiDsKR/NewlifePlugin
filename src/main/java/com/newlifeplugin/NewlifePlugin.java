@@ -64,6 +64,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     public List<Mission> missions = new ArrayList<Mission>() {
 
     };
+    private HashMap<Player, Boolean> isUsedTotem;
 
     @Override
     public void onEnable() {
@@ -74,6 +75,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         isNegative63Y = new HashMap<>();
         isNotSafeToSleep = new HashMap<>();
         isReadyToSleep = new HashMap<>();
+
+        isUsedTotem = new HashMap<>();
 
         // Declare Variables
         for (Player player : Bukkit.getServer().getOnlinePlayers()) {
@@ -258,17 +261,22 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player victim = event.getPlayer();
-        Entity killer = event.getEntity();
+        Player player = event.getPlayer();
+        if (isUsedTotem.containsKey(player) && isUsedTotem.get(player)) {
+            // Mission cleared
+            for (Mission m : missions) {
+                if (m.missinName == "쓸모없는 토템" && m.clearedTeam == "미달성") {
+                    m.clearedTeam = teams.get(player.getName());
+                }
+            }
+        }
 
     }
-
     private void InventoryMissionCheck(Player player) {
         checkGoldRich1(player);
         checkGoldRich2(player);
         checkGoldRich3(player);
         checkSEOKDoctor(player);
-        CheckGatcha(player);
     }
 
     private void openMissionUI(Player player) {
@@ -447,6 +455,30 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player) event.getEntity();
+        double health = player.getHealth();
+
+        // Check if player's health drops to 0 or below without void damage
+        if (health - event.getFinalDamage() <= 0 && event.getFinalDamage() != 0 && event.getCause() != EntityDamageEvent.DamageCause.VOID) {
+            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+            ItemStack offHandItem = player.getInventory().getItemInOffHand();
+
+            // Check if player has a Totem of Undying in the main hand or off-hand
+            if ((mainHandItem.getType() == Material.TOTEM_OF_UNDYING) || (offHandItem.getType() == Material.TOTEM_OF_UNDYING)) {
+                // Player has used a Totem of Undying
+                isUsedTotem.put(player, true);
+                player.sendMessage("5초 안에 죽으면 미션이 클리어됩니다.");
+                getServer().getScheduler().runTaskLater(this, () -> isUsedTotem.put(player, false), 100L); // Set to false after 5 seconds (100 ticks)
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
 
@@ -598,32 +630,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             }
         }
     }
-
-    void CheckGatcha(Player player) {
-        PlayerInventory inventory = player.getInventory();
-        int requiredAmount = 1;
-        ItemStack targetItem = new ItemStack(Material.AXOLOTL_BUCKET, requiredAmount);
-
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.isSimilar(targetItem) && item.getAmount() >= requiredAmount) {
-                ItemMeta itemMeta = item.getItemMeta();
-                if (itemMeta instanceof AxolotlBucketMeta) {
-                    AxolotlBucketMeta bucketMeta = (AxolotlBucketMeta) itemMeta;
-                    if (bucketMeta.getVariant() == Axolotl.Variant.BLUE) {
-                        // Mission cleared
-                        for (Mission m : missions) {
-                            if (m.missinName == "금 억만장자" && m.clearedTeam == "미달성") {
-                                m.clearedTeam = teams.get(player.getName());
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-
 
     private static boolean hasMaterial(PlayerInventory inventory, Material material) {
         for (ItemStack item : inventory.getContents()) {

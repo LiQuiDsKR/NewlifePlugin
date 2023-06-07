@@ -569,5 +569,23 @@
     },
     "done": true
   },
+  "minecraft:recipes/brewing/cauldron": {
+    "criteria": {
+      "has_water_bucket": "2023-06-07 22:34:19 +0900"
+    },
+    "done": true
+  },
+  "minecraft:husbandry/axolotl_in_a_bucket": {
+    "criteria": {
+      "axolotl_bucket": "2023-06-07 22:35:54 +0900"
+    },
+    "done": true
+  },
+  "minecraft:adventure/totem_of_undying": {
+    "criteria": {
+      "used_totem": "2023-06-07 23:14:50 +0900"
+    },
+    "done": true
+  },
   "DataVersion": 3337
 }
