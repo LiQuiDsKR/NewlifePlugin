@@ -464,7 +464,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                         new BukkitRunnable() {
                             @Override
                             public void run() {
-                                checkLittlePrince(entity);
+                                checkLittlePrince();
                             }
                         }.runTaskLater(this, 20L); // Delay of 1 second (20 ticks)
                     }
@@ -531,12 +531,10 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         return item != null && item.getType().equals(Material.TOTEM_OF_UNDYING);
     }
 
-    private void checkLittlePrince(Entity entity) {
-        Entity fox;
+    private void checkLittlePrince() {
         if (isEntityUsedTotem.size() >= 2) {
             for (Entity fox_usedTotem : isEntityUsedTotem.keySet()) {
                 if (fox_usedTotem instanceof Fox) {
-                    fox = fox_usedTotem;
                     for (Entity otherEntity : isEntityUsedTotem.keySet()) {
                         if (otherEntity.equals(fox_usedTotem)) {
                             continue;
@@ -549,11 +547,12 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                             }
                         }
                     }
+                    isEntityUsedTotem.remove(fox_usedTotem);
                 }
             }
         }
 
-        isEntityUsedTotem.remove(fox);
+
     }
 
 
