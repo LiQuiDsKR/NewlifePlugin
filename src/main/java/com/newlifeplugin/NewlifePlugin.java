@@ -12,6 +12,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.meta.AxolotlBucketMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -53,6 +54,8 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
 
     private Player wolfOwner;
 
+    private HashMap<Player, Boolean> isUsedTotem;
+
     public class Mission {
         String missinName;
         String difficulty;
@@ -64,7 +67,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     public List<Mission> missions = new ArrayList<Mission>() {
 
     };
-    private HashMap<Player, Boolean> isUsedTotem;
+    private HashMap<Entity, Boolean> isEntityUsedTotem;
 
     @Override
     public void onEnable() {
@@ -77,6 +80,7 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         isReadyToSleep = new HashMap<>();
 
         isUsedTotem = new HashMap<>();
+        isEntityUsedTotem = new HashMap<>();
 
         // Declare Variables
         for (Player player : Bukkit.getServer().getOnlinePlayers()) {
@@ -222,15 +226,15 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        Location location = player.getLocation();
 
-        // Check if the player is in a zombie village biome
-        if (location.getBlock().getBiome() == Biome.PLAINS && location.getBlock().getBiome().name().toLowerCase().contains("zombie")) {
-            // Player has arrived at a zombie village
-            for (Mission m : missions) {
-                if (m.missinName == "아무도 없어요?" && m.clearedTeam == "미달성") {
-                    m.clearedTeam = teams.get(player.getName());
+        for (Entity nearbyEntity : player.getNearbyEntities(16, 16, 16)) {
+            if (nearbyEntity instanceof Creeper && ((Creeper) nearbyEntity).isPowered()) {
+                for (Mission m : missions) {
+                    if (m.missinName == "충전 완료" && m.clearedTeam == "미달성") {
+                        m.clearedTeam = teams.get(player.getName());
+                    }
                 }
+                break; // No need to continue checking for other Charged Creepers
             }
         }
 
@@ -450,12 +454,29 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
                         }
                     }
                 }
+
+                // 여기서부터는 "어린왕자" 미션 클리어 판정입니다.
+                if (entity.getType() == EntityType.FOX || entity instanceof Player) {
+                    // Check if the entity has an Undying Totem in hand
+                    if (hasUndyingTotem(entity)) {
+                        isEntityUsedTotem.put(entity, true); // Mark the entity as having used the totem
+
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                checkLittlePrince(entity);
+                            }
+                        }.runTaskLater(this, 20L); // Delay of 1 second (20 ticks)
+                    }
+                }
             }
         }
     }
 
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
+        Entity entity = event.getEntity();
+
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
@@ -472,7 +493,6 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             if ((mainHandItem.getType() == Material.TOTEM_OF_UNDYING) || (offHandItem.getType() == Material.TOTEM_OF_UNDYING)) {
                 // Player has used a Totem of Undying
                 isUsedTotem.put(player, true);
-                player.sendMessage("5초 안에 죽으면 미션이 클리어됩니다.");
                 getServer().getScheduler().runTaskLater(this, () -> isUsedTotem.put(player, false), 100L); // Set to false after 5 seconds (100 ticks)
             }
         }
@@ -491,6 +511,49 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             }
             clickedEntity.remove();
         }
+    }
+
+    private boolean hasUndyingTotem(Entity entity) {
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+            ItemStack offHandItem = player.getInventory().getItemInOffHand();
+            return isUndyingTotem(mainHandItem) || isUndyingTotem(offHandItem);
+        } else if (entity instanceof Fox) {
+            Fox fox = (Fox) entity;
+            ItemStack item = fox.getEquipment().getItem(EquipmentSlot.HAND);
+            return isUndyingTotem(item);
+        }
+        return false;
+    }
+
+    private boolean isUndyingTotem(ItemStack item) {
+        return item != null && item.getType().equals(Material.TOTEM_OF_UNDYING);
+    }
+
+    private void checkLittlePrince(Entity entity) {
+        Entity fox;
+        if (isEntityUsedTotem.size() >= 2) {
+            for (Entity fox_usedTotem : isEntityUsedTotem.keySet()) {
+                if (fox_usedTotem instanceof Fox) {
+                    fox = fox_usedTotem;
+                    for (Entity otherEntity : isEntityUsedTotem.keySet()) {
+                        if (otherEntity.equals(fox_usedTotem)) {
+                            continue;
+                        }
+                        if (otherEntity instanceof Player) {
+                            for (Mission m : missions) {
+                                if (m.missinName == "어린 왕자" && m.clearedTeam == "미달성") {
+                                    m.clearedTeam = teams.get(otherEntity.getName());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        isEntityUsedTotem.remove(fox);
     }
 
 
