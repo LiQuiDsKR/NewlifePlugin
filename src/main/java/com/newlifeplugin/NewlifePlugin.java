@@ -308,13 +308,11 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         if (!isReadyToSleep.containsKey(player)) {
             isReadyToSleep.put(player, false);
         }
-
-
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getView().getTitle().equalsIgnoreCase("Missions")) {
+        if (event.getView().getTitle().equalsIgnoreCase("미션 목록")) {
             event.setCancelled(true);
         }
     }
@@ -497,6 +495,18 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
             }
         }
     }
+    @EventHandler
+    public void onPlayerItemBreak(PlayerItemBreakEvent event) {
+        Player player = event.getPlayer();
+        ItemStack brokenItem = event.getBrokenItem();
+
+        // Check if the broken item is a Netherite Hoe
+        if (isNetheriteHoe(brokenItem)) {
+            // Mission cleared
+            player.sendMessage("Mission cleared!");
+            // Handle mission cleared logic here
+        }
+    }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -513,6 +523,9 @@ public final class NewlifePlugin extends JavaPlugin implements Listener {
         }
     }
 
+    private boolean isNetheriteHoe(ItemStack item) {
+        return item != null && item.getType() == Material.NETHERITE_HOE;
+    }
     private boolean hasUndyingTotem(Entity entity) {
         if (entity instanceof Player) {
             Player player = (Player) entity;
